@@ -1,0 +1,10 @@
+{
+  "dev": {
+    "driver": "mysql",
+    "host": "localhost",
+    "user": "root",
+    "password": "ez123",
+    "database": "chat",
+    "multipleStatements": true
+  }
+}

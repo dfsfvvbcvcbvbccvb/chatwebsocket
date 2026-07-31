@@ -1,0 +1,19 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "db-migrate": "^0.11.14",
+    "db-migrate-mysql": "^3.0.0",
+    "express": "^5.2.1",
+    "mysql": "^2.18.1"
+  }
+}
