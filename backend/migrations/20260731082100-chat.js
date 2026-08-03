@@ -7,6 +7,11 @@ export function up(db) {
       email VARCHAR(255) NOT NULL UNIQUE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS sessions (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      userId INT NOT NULL,
+      sessionId VARCHAR(255) NOT NULL
+    );
   `);
 }
 

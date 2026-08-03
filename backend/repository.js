@@ -34,6 +34,7 @@ export async function registration(formdata) {
         [formdata?.login]
     )
     if (rows2.length !== 0) {
+        await connection.end()
         return 'Пользователь с таким именем уже существует'
     }
 
@@ -42,6 +43,7 @@ export async function registration(formdata) {
     try {
         hashedPassword = await bcrypt.hash(formdata?.password, saltRounds)
     } catch (e) {
+        await connection.end()
         console.error(e)
         return 'Ошибка'
     }
@@ -54,6 +56,7 @@ export async function registration(formdata) {
         await connection.end()
         return 'Успешно!'
     } catch (e) {
+        await connection.end()
         console.error(e)
         return 'Ошибка!'
     }
@@ -67,21 +70,46 @@ export async function login(formdata) {
     }
 
     let [rows] = await connection.execute(
-        `SELECT password FROM accounts WHERE email = ?`,
+        `SELECT password, id FROM accounts WHERE email = ?`,
         [formdata?.email]
     )
 
+
     if (rows.length === 0) {
+        await connection.end()
         return 'Неверный логин или пароль!'
     }
 
     let hashedPassword = rows[0].password
-    let isMatch = bcrypt.compare(String(formdata?.password), String(hashedPassword))
+    let isMatch = await bcrypt.compare(String(formdata?.password), String(hashedPassword))
+    console.log(isMatch)
     if (!isMatch) {
+        await connection.end()
         return 'Неверный логин или пароль!'
     } else {
         let sessionId = crypto.randomBytes(32).toString('hex')
-        return 'Успешно!'
+        await connection.execute(
+            `INSERT INTO sessions (userId, sessionId) VALUES (?, ?)`,
+            [rows[0].id, sessionId]
+        )
+        await connection.end()
+        return {
+            response: "Успешно!",
+            sessionId: sessionId
+        }
     }
+}
+
+export async function getUserId(formdata) {
+    let connection = await getConnection()
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM sessions WHERE sessionId = ?`,
+        [formdata.sessionId]
+    )
+
+    await connection.end()
+
+    return rows
 }
 
