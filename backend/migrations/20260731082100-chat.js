@@ -12,6 +12,20 @@ export function up(db) {
       userId INT NOT NULL,
       sessionId VARCHAR(255) NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS friends (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      userId INT NOT NULL,
+      username VARCHAR(255) NOT NULL,
+      friendId INT NOT NULL,
+      friendUsername VARCHAR(255) NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS requests (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      senderId INT NOT NULL,
+      receiverId INT NOT NULL,
+      senderUsername VARCHAR(255) NOT NULL,
+      receiverUsername VARCHAR(255) NOT NULL
+    );
   `);
 }
 

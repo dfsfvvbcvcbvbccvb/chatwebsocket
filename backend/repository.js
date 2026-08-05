@@ -82,7 +82,6 @@ export async function login(formdata) {
 
     let hashedPassword = rows[0].password
     let isMatch = await bcrypt.compare(String(formdata?.password), String(hashedPassword))
-    console.log(isMatch)
     if (!isMatch) {
         await connection.end()
         return 'Неверный логин или пароль!'
@@ -103,6 +102,10 @@ export async function login(formdata) {
 export async function getUserId(formdata) {
     let connection = await getConnection()
 
+    if (!formdata || !formdata.sessionId) {
+        return
+    }
+
     let [rows] = await connection.execute(
         `SELECT * FROM sessions WHERE sessionId = ?`,
         [formdata.sessionId]
@@ -111,5 +114,62 @@ export async function getUserId(formdata) {
     await connection.end()
 
     return rows
+}
+
+export async function logout(formdata) {
+    let connection = await getConnection()
+    if (!formdata || !formdata.sessionId) {
+        return
+    }
+    let [rows] = await connection.execute(
+        `SELECT * FROM sessions WHERE sessionId = ?`,
+        [formdata.sessionId]
+    )
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Ошибка!'
+    } else {
+        await connection.execute(
+            `DELETE FROM sessions WHERE sessionId = ?`,
+            [formdata.sessionId]
+        )
+        await connection.end()
+        return 'Успешно!'
+    }
+}
+
+export async function sendRequest(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.receiverUsername || !formdata.userId) {
+        return 'Заполните все поля!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT id FROM accounts WHERE login = ?`,
+        [formdata.receiverUsername]
+    )
+
+    let [rows2] = await connection.execute(
+        `SELECT login FROM accounts WHERE id = ?`,
+        [formdata.userId]
+    )
+
+    if (rows2.length === 0) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Пользователя с таким юзером не существует'
+    }
+
+    await connection.execute(
+        `INSERT INTO requests (senderId, receiverId, senderUsername, receiverUsername) VALUES (?, ?, ?, ?)`,
+        [formdata.userId, rows[0].id, rows2[0].login, formdata.receiverUsername]
+    )
+    await connection.end()
+    return 'Успешно!'
 }
 

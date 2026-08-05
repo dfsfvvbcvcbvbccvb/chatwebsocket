@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId } from './repository.js';
+import { registration, login, getUserId, logout, sendRequest} from './repository.js';
 import cookieParser from 'cookie-parser';
 
 const app = express();
@@ -31,7 +31,6 @@ app.post('/api/login', async (req, res) => {
         res.json(response)
         return
     }
-    console.log(response)
 
     res.cookie('login', response.sessionId, {
         maxAge: 3600000 * 24,
@@ -52,6 +51,24 @@ app.post('/api/getUserId', async (req, res) => {
     }
     let response = await getUserId(formdata)
     res.json(response[0].userId)
+});
+
+app.post('/api/logout', async (req, res) => {
+    let formdata = {
+        sessionId: req.cookies?.login
+    }
+    res.clearCookie('login')
+    let response = await logout(formdata)
+    res.json(response)
+});
+
+app.post('/api/send/request', async (req, res) => {
+    let formdata = {
+        userId: req.body.userId,
+        receiverUsername: req.body.receiverUsername
+    }
+    let response = await sendRequest(formdata)
+    res.json(response)
 });
 
 app.listen(PORT, () => console.log('Сервер запущен'));
