@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById} from './repository.js';
 import cookieParser from 'cookie-parser';
 
 const app = express();
@@ -64,10 +64,52 @@ app.post('/api/logout', async (req, res) => {
 
 app.post('/api/send/request', async (req, res) => {
     let formdata = {
-        userId: req.body.userId,
-        receiverUsername: req.body.receiverUsername
+        userId: req.body?.userId,
+        receiverUsername: req.body?.receiverUsername
     }
     let response = await sendRequest(formdata)
+    res.json(response)
+});
+
+app.post('/api/get/requests/sender', async (req, res) => {
+    let formdata = {
+        senderId: req.body?.senderId
+    }
+    let response = await getRequestsBySenderId(formdata)
+    res.json(response)
+});
+
+app.post('/api/get/requests/receiver', async (req, res) => {
+    let formdata = {
+        receiverId: req.body?.receiverId
+    }
+    let response = await getRequestsByReceiverId(formdata)
+    res.json(response)
+});
+
+app.post('/api/cancel/request', async (req, res) => {
+    let formdata = {
+        userId: req.body?.userId,
+        requestId: req.body?.requestId
+    }
+    let response = await cancelRequest(formdata)
+    res.json(response)
+});
+
+app.post('/api/accept/request', async (req, res) => {
+    let formdata = {
+        userId: req.body?.userId,
+        requestId: req.body?.requestId
+    }
+    let response = await acceptRequest(formdata)
+    res.json(response)
+});
+
+app.post('/api/get/login', async (req, res) => {
+    let formdata = {
+        id: req.body?.id
+    }
+    let response = await getLoginById(formdata)
     res.json(response)
 });
 

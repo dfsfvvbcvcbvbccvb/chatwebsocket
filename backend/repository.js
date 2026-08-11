@@ -2,6 +2,7 @@ import mysql from "mysql2/promise"
 import bcrypt from 'bcrypt';
 import crypto from 'crypto'
 import { isGeneratorFunction } from 'util/types';
+import { convertProcessSignalToExitCode } from "util";
 
 let saltRounds = 10
 
@@ -150,14 +151,13 @@ export async function sendRequest(formdata) {
         [formdata.receiverUsername]
     )
 
-    let [rows2] = await connection.execute(
-        `SELECT login FROM accounts WHERE id = ?`,
-        [formdata.userId]
+    let [rows3] = await connection.execute(
+        `SELECT * FROM requests WHERE senderId = ? AND receiverId = ?`,
+        [formdata.userId, rows[0].id]
     )
 
-    if (rows2.length === 0) {
-        await connection.end()
-        return 'Ошибка!'
+    if (rows3.length > 0) {
+        return 'Заявка уже отправлена!'
     }
 
     if (rows.length === 0) {
@@ -166,10 +166,165 @@ export async function sendRequest(formdata) {
     }
 
     await connection.execute(
-        `INSERT INTO requests (senderId, receiverId, senderUsername, receiverUsername) VALUES (?, ?, ?, ?)`,
-        [formdata.userId, rows[0].id, rows2[0].login, formdata.receiverUsername]
+        `INSERT INTO requests (senderId, receiverId) VALUES (?, ?)`,
+        [formdata.userId, rows[0].id]
     )
     await connection.end()
     return 'Успешно!'
 }
+
+export async function cancelRequest(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.requestId || !formdata.userId) {
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM requests WHERE id = ?`,
+        [formdata.requestId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+    if (Number(rows[0].senderId) !== Number(formdata.userId)) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    await connection.execute(
+        `DELETE FROM requests WHERE id = ?`,
+        [formdata.requestId]
+    )
+
+    await connection.end()
+
+    return 'Успешно!'
+}
+
+export async function acceptRequest(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.requestId || !formdata.userId) {
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM requests WHERE id = ?`,
+        [formdata.requestId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+    if (Number(rows[0].receiverId) !== Number(formdata.userId)) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    await connection.execute(
+        `INSERT INTO friends (userId1, userId2) VALUES (?, ?)`,
+        [rows[0].senderId, rows[0].receiverId]
+    )
+
+    await connection.execute(
+        `DELETE FROM requests WHERE id = ?`,
+        [formdata.requestId]
+    )
+
+    await connection.end()
+
+    return 'Успешно!'
+}
+
+export async function getRequestsBySenderId(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.senderId) {
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM requests WHERE senderId = ?`,
+        [formdata.senderId]
+    )
+
+    let [rows2] = await connection.execute(
+        `SELECT sender.login AS senderLogin, receiver.login AS receiverLogin FROM requests
+        INNER JOIN accounts AS sender ON requests.senderId = sender.id
+        INNER JOIN accounts AS receiver ON requests.receiverId = receiver.id WHERE sender.id = ?`,
+        [formdata.senderId]
+    )
+    for (let a = 0; a < rows.length; a++) {
+        rows[a].senderUsername = rows2[a].senderLogin
+        rows[a].receiverUsername = rows2[a].receiverLogin
+    }
+
+    if (rows.length === 0) {
+        return 'Не найдено!'
+    }
+
+    return rows
+}
+
+export async function getRequestsByReceiverId(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.receiverId) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM requests WHERE receiverId = ?`,
+        [formdata.receiverId]
+    )
+
+    let [rows2] = await connection.execute(
+        `SELECT sender.login AS senderLogin, receiver.login AS receiverLogin FROM requests
+        INNER JOIN accounts AS sender ON requests.senderId = sender.id
+        INNER JOIN accounts AS receiver ON requests.receiverId = receiver.id WHERE receiver.id = ?`,
+        [formdata.receiverId]
+    )
+
+    for (let a = 0; a < rows.length; a++) {
+        rows[a].senderUsername = rows2[a].senderLogin
+        rows[a].receiverUsername = rows2[a].receiverLogin
+    }
+
+    console.log(rows)
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Не найдено!'
+    }
+
+    await connection.end()
+    return rows
+}
+
+export async function getLoginById(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.id) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT login FROM accounts WHERE id = ?`,
+        [formdata.id]
+    )
+
+    if (rows.length === 0 ) {
+        await connection.end()
+        return 'Не найдено!'
+    }
+
+    await connection.end()
+    return rows
+}  
 

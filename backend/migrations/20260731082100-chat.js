@@ -15,16 +15,17 @@ export function up(db) {
     CREATE TABLE IF NOT EXISTS friends (
       id INT PRIMARY KEY AUTO_INCREMENT,
       userId INT NOT NULL,
-      username VARCHAR(255) NOT NULL,
-      friendId INT NOT NULL,
-      friendUsername VARCHAR(255) NOT NULL
+      friendId INT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS requests (
       id INT PRIMARY KEY AUTO_INCREMENT,
       senderId INT NOT NULL,
-      receiverId INT NOT NULL,
-      senderUsername VARCHAR(255) NOT NULL,
-      receiverUsername VARCHAR(255) NOT NULL
+      receiverId INT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS friends (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      userId1 INT NOT NULL,
+      userId2 INT NOT NULL
     );
   `);
 }
