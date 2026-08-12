@@ -27,6 +27,13 @@ export function up(db) {
       userId1 INT NOT NULL,
       userId2 INT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS messages (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      content VARCHAR(255) NOT NULL,
+      senderId INT NOT NULL,
+      receiverId INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 }
 

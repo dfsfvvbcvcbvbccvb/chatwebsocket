@@ -1,8 +1,6 @@
 import mysql from "mysql2/promise"
 import bcrypt from 'bcrypt';
 import crypto from 'crypto'
-import { isGeneratorFunction } from 'util/types';
-import { convertProcessSignalToExitCode } from "util";
 
 let saltRounds = 10
 
@@ -151,10 +149,22 @@ export async function sendRequest(formdata) {
         [formdata.receiverUsername]
     )
 
+    if (rows.length === 0) {
+        return 'Такого пользователя не существует'
+    }
+
     let [rows3] = await connection.execute(
         `SELECT * FROM requests WHERE senderId = ? AND receiverId = ?`,
         [formdata.userId, rows[0].id]
     )
+    let [rows4] = await connection.execute(
+        `SELECT * FROM friends WHERE userId1 = ? AND userId2 = ? OR userId1 = ? AND userId2 = ?`,
+        [formdata.userId, rows[0].id, rows[0].id, formdata.userId]
+    )
+
+    if (rows4.length > 0) {
+        return 'Вы уже друзья с этим пользователем'
+    }
 
     if (rows3.length > 0) {
         return 'Заявка уже отправлена!'
@@ -295,8 +305,6 @@ export async function getRequestsByReceiverId(formdata) {
         rows[a].receiverUsername = rows2[a].receiverLogin
     }
 
-    console.log(rows)
-
     if (rows.length === 0) {
         await connection.end()
         return 'Не найдено!'
@@ -328,3 +336,83 @@ export async function getLoginById(formdata) {
     return rows
 }  
 
+export async function getFriends(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.id) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM friends WHERE userId1 = ? OR userId2 = ?`,
+        [formdata.id, formdata.id]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Не найдено'
+    }
+
+    let [rows2] = await connection.execute(
+        `SELECT friend1.login AS friend1Login, friend2.login AS friend2Login FROM friends
+        INNER JOIN accounts AS friend1 ON friends.userId1 = friend1.id
+        INNER JOIN accounts AS friend2 ON friends.userId2 = friend2.id WHERE friend1.id = ? OR friend2.id = ?`,
+        [formdata.id, formdata.id]
+    )
+
+    for (let a = 0; a < rows.length; a++) {
+        if (rows[a].userId1 === formdata.id) {
+            rows[a].friendName = rows2[a].friend2Login
+        }
+        if (rows[a].userId2 === formdata.id) {
+            rows[a].friendName = rows2[a].friend1Login
+        }
+    }
+
+    await connection.end()
+    return rows
+}
+
+export async function sendMessage(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.content || !formdata.senderId || !formdata.receiverId) {
+        await connection.end()
+        return 'Заполните все поля!'
+    }
+
+    try {
+        await connection.execute(
+            `INSERT INTO messages (content, senderId, receiverId) VALUES (?, ?, ?)`,
+            [formdata.content, formdata.senderId, formdata.receiverId]
+        )
+        await connection.end()
+        return 'Успешно!'
+    } catch (e) {
+        await connection.end()
+        console.error(e)
+        return 'Ошибка!'
+    }
+}
+
+export async function getMessages(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.senderId || !formdata.receiverId) {
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM messages WHERE senderId = ? AND receiverId = ?`,
+        [formdata.senderId, formdata.receiverId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Не найдено!'
+    }
+
+    await connection.end()
+    return rows
+}

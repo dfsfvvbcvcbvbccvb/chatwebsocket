@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends} from './repository.js';
 import cookieParser from 'cookie-parser';
 
 const app = express();
@@ -112,5 +112,14 @@ app.post('/api/get/login', async (req, res) => {
     let response = await getLoginById(formdata)
     res.json(response)
 });
+
+app.post('/api/get/friends', async (req, res) => {
+    let formdata = {
+        id: req.body?.id
+    }
+    let response = await getFriends(formdata)
+    res.json(response)
+})
+
 
 app.listen(PORT, () => console.log('Сервер запущен'));
