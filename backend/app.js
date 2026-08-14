@@ -1,12 +1,46 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById} from './repository.js';
 import cookieParser from 'cookie-parser';
+import { WebSocketServer } from 'ws';
 
 const app = express();
 const PORT = 4000;
+const server = new WebSocketServer({ port:8080 })
+
 app.use(express.json())
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }))
+let activeClients = new Map()
+
+server.on('connection', async (ws) => {
+    let currentUserId = null
+
+    ws.on('message', async (message) => {
+        let messageString = message.toString()
+        messageString = JSON.parse(messageString)
+        activeClients.set(Number(messageString.senderId), ws)
+
+        let response = null
+        if (messageString.get === true) {
+            response = await getMessages(messageString)
+        }
+        if (messageString.get !== true) {
+            await sendMessage(messageString)
+            response = await getMessages(messageString)
+        }
+
+        let receiverWs = activeClients.get(Number(messageString.senderId))
+        let receiverWs2 = activeClients.get(Number(messageString.receiverId))
+
+        receiverWs.send(JSON.stringify(response))
+        if (receiverWs2) {
+            receiverWs2.send(JSON.stringify(response))
+        }
+    })
+    ws.on('close', () => {
+        console.log('test')
+    })
+})
 
 app.post('/api/register', async (req, res) => {
     let formdata = {
@@ -118,6 +152,15 @@ app.post('/api/get/friends', async (req, res) => {
         id: req.body?.id
     }
     let response = await getFriends(formdata)
+    res.json(response)
+})
+
+app.post('/api/get/friend', async (req, res) => {
+    let formdata = {
+        friendId: req.body?.friendId
+    }
+
+    let response = await getFriendInfoById(formdata)
     res.json(response)
 })
 

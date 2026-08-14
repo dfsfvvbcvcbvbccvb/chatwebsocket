@@ -351,7 +351,7 @@ export async function getFriends(formdata) {
 
     if (rows.length === 0) {
         await connection.end()
-        return 'Не найдено'
+        return 'Не найдено!'
     }
 
     let [rows2] = await connection.execute(
@@ -404,13 +404,50 @@ export async function getMessages(formdata) {
     }
 
     let [rows] = await connection.execute(
-        `SELECT * FROM messages WHERE senderId = ? AND receiverId = ?`,
+        `SELECT * FROM messages WHERE senderId = ? AND receiverId = ? OR receiverId = ? AND senderId = ?`,
+        [formdata.senderId, formdata.receiverId, formdata.senderId, formdata.receiverId]
+    )
+
+    let [rows2] = await connection.execute(
+        `SELECT sender.login AS senderLogin, receiver.login AS receiverLogin FROM messages
+        INNER JOIN accounts AS sender ON messages.senderId = sender.id
+        INNER JOIN accounts AS receiver ON messages.receiverId = receiver.id WHERE sender.id = ? OR receiver.id = ?`,
         [formdata.senderId, formdata.receiverId]
     )
+
+    for (let a = 0; a < rows.length; a++) {
+        if (rows[a].senderId === formdata.senderId) {
+            rows[a].senderUsername = rows2[0].senderLogin
+        }
+        if (rows[a].senderId === formdata.receiverId) {
+            rows[a].senderUsername = rows2[0].receiverLogin
+        }
+    }
 
     if (rows.length === 0) {
         await connection.end()
         return 'Не найдено!'
+    }
+
+    await connection.end()
+    return rows
+}
+
+export async function getFriendInfoById(formdata) {
+    let connection = await getConnection()
+    if (!formdata || !formdata.friendId) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM friends WHERE id = ?`,
+        [formdata.friendId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Не найдено'
     }
 
     await connection.end()
