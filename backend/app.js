@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile} from './repository.js';
 import cookieParser from 'cookie-parser';
 import { WebSocketServer } from 'ws';
 
@@ -38,7 +38,7 @@ server.on('connection', async (ws) => {
         }
     })
     ws.on('close', () => {
-        console.log('test')
+        
     })
 })
 
@@ -117,6 +117,9 @@ app.post('/api/get/requests/receiver', async (req, res) => {
     let formdata = {
         receiverId: req.body?.receiverId
     }
+    if (!req.body?.receiverId) {
+        formdata.receiverId = req.body.id
+    }
     let response = await getRequestsByReceiverId(formdata)
     res.json(response)
 });
@@ -161,6 +164,15 @@ app.post('/api/get/friend', async (req, res) => {
     }
 
     let response = await getFriendInfoById(formdata)
+    res.json(response)
+})
+
+app.post('/api/get/profile', async (req, res) => {
+    let formdata = {
+        userId: req.body?.userId
+    }
+
+    let response = await getProfile(formdata)
     res.json(response)
 })
 

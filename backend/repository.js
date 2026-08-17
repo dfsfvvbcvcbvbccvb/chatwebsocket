@@ -360,7 +360,10 @@ export async function getFriends(formdata) {
         INNER JOIN accounts AS friend2 ON friends.userId2 = friend2.id WHERE friend1.id = ? OR friend2.id = ?`,
         [formdata.id, formdata.id]
     )
-
+    if (rows2.length === 0) {
+        await connection.end()
+        return 'Не найдено!'
+    }
     for (let a = 0; a < rows.length; a++) {
         if (rows[a].userId1 === formdata.id) {
             rows[a].friendName = rows2[a].friend2Login
@@ -403,16 +406,24 @@ export async function getMessages(formdata) {
         return 'Ошибка!'
     }
 
+
     let [rows] = await connection.execute(
-        `SELECT * FROM messages WHERE senderId = ? AND receiverId = ? OR receiverId = ? AND senderId = ?`,
+        `SELECT * FROM (
+            SELECT * FROM messages
+            WHERE senderId = ? AND receiverId = ? OR receiverId = ? AND senderId = ?
+            ORDER BY id DESC
+            LIMIT 100
+        ) AS temp
+        ORDER BY id ASC`,
         [formdata.senderId, formdata.receiverId, formdata.senderId, formdata.receiverId]
     )
+
 
     let [rows2] = await connection.execute(
         `SELECT sender.login AS senderLogin, receiver.login AS receiverLogin FROM messages
         INNER JOIN accounts AS sender ON messages.senderId = sender.id
-        INNER JOIN accounts AS receiver ON messages.receiverId = receiver.id WHERE sender.id = ? OR receiver.id = ?`,
-        [formdata.senderId, formdata.receiverId]
+        INNER JOIN accounts AS receiver ON messages.receiverId = receiver.id WHERE sender.id = ? AND receiver.id = ? OR receiver.id = ? AND sender.id = ?`,
+        [formdata.senderId, formdata.receiverId, formdata.senderId, formdata.receiverId]
     )
 
     for (let a = 0; a < rows.length; a++) {
@@ -450,6 +461,27 @@ export async function getFriendInfoById(formdata) {
         return 'Не найдено'
     }
 
+    await connection.end()
+    return rows
+}
+
+export async function getProfile(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.userId) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT login, description FROM accounts WHERE id = ?`,
+        [formdata.userId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Не найдено!'
+    }
     await connection.end()
     return rows
 }
