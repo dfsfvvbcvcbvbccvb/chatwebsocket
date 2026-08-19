@@ -35,6 +35,16 @@ export function up(db) {
       receiverId INT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS chat_group (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      name VARCHAR(255) NOT NULL,
+      ownerId INT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS group_members (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      groupId INT NOT NULL,
+      memberId INT NOT NULL
+    );
   `);
 }
 

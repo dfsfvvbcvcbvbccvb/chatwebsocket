@@ -360,16 +360,17 @@ export async function getFriends(formdata) {
         INNER JOIN accounts AS friend2 ON friends.userId2 = friend2.id WHERE friend1.id = ? OR friend2.id = ?`,
         [formdata.id, formdata.id]
     )
-    if (rows2.length === 0) {
+    if (rows2.length === 0 || !rows2[0].friend2Login || !rows2[0].friend1Login) {
         await connection.end()
         return 'Не найдено!'
     }
+
     for (let a = 0; a < rows.length; a++) {
         if (rows[a].userId1 === formdata.id) {
-            rows[a].friendName = rows2[a].friend2Login
+            rows[a].friendName = rows2[a]?.friend2Login
         }
         if (rows[a].userId2 === formdata.id) {
-            rows[a].friendName = rows2[a].friend1Login
+            rows[a].friendName = rows2[a]?.friend1Login
         }
     }
 
@@ -484,4 +485,97 @@ export async function getProfile(formdata) {
     }
     await connection.end()
     return rows
+}
+
+export async function editProfile(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.username && !formdata.description || !formdata.userId) {{
+        await connection.end()
+        return 'Ошибка!'
+    }}
+
+    let [rows] = await connection.execute(
+        `SELECT login, description FROM accounts WHERE id = ?`,
+        [formdata.userId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    if (formdata.username) {
+        await connection.execute(
+            `UPDATE accounts SET login=? WHERE id = ?`,
+            [formdata.username, formdata.userId]
+        )
+    }
+
+    if (formdata.description) {
+        await connection.execute(
+            `UPDATE accounts SET description=? WHERE id = ?`,
+            [formdata.description, formdata.userId]
+        )
+    }
+
+    await connection.end()
+    return 'Успешно!'
+}
+
+export async function createGroupChat(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.userId || !formdata.usernames) {
+        await connection.end()
+        return 'Заполните все поля!'
+    }
+
+    formdata.usernames = formdata.usernames.split(' ')
+
+    if (formdata.usernames.length > 10) {
+        await connection.end()
+        return 'Превышен лимит пользователей!'
+    }
+
+    let [rows3] = await connection.execute(
+        `SELECT * FROM chat_group WHERE name = ?`,
+        [formdata.name]
+    )
+    if (rows3.length > 0) {
+        return 'Группа с таким названием уже существует'
+    }
+
+    let ids = []
+
+    for (let a = 0; a < formdata.usernames.length; a++) {
+        let [rows] = await connection.execute(
+            `SELECT id FROM accounts WHERE login = ?`,
+            [formdata.usernames[a]]
+        )
+        if (rows.length === 0) {
+            return `Пользователь ${formdata.usernames[a]} не найден`
+        }
+        let [rows2] = await connection.execute(
+            `SELECT * FROM friends WHERE userId1 = ? AND userId2 = ? OR userId2 = ? AND userId1 = ?`,
+            [formdata.userId, rows[0].id, formdata.userId, rows[0].id]
+        )
+        if (rows2.length === 0) {
+            return `Вы не друзья с пользователем ${formdata.usernames[a]}`
+        }
+        ids.push(rows[0].id)
+    }
+    ids.push(formdata.userId)
+
+    let [result] = await connection.execute(
+        `INSERT INTO chat_group (ownerId, name) VALUES (?, ?)`,
+        [formdata.userId, formdata.name]
+    )
+    for (let a = 0; a < ids.length; a++) {
+        await connection.execute(
+            `INSERT INTO group_members (groupId, memberId) VALUES (?, ?)`,
+            [result.insertId, ids[a]]
+        )
+    }
+    return 'Успешно!'
 }

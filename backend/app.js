@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat} from './repository.js';
 import cookieParser from 'cookie-parser';
 import { WebSocketServer } from 'ws';
 
@@ -176,5 +176,26 @@ app.post('/api/get/profile', async (req, res) => {
     res.json(response)
 })
 
+app.post('/api/edit/profile', async (req, res) => {
+    let formdata = {
+        userId: req.body?.userId,
+        username: req.body?.username,
+        description: req.body?.description
+    }
+
+    let response = await editProfile(formdata)
+    res.json(response)
+})
+
+app.post('/api/create/group', async (req, res) => {
+    let formdata = {
+        userId: req.body?.userId,
+        usernames: req.body?.usernames,
+        name: req.body?.name
+    }
+
+    let response = await createGroupChat(formdata)
+    res.json(response)
+})
 
 app.listen(PORT, () => console.log('Сервер запущен'));
