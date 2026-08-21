@@ -579,3 +579,93 @@ export async function createGroupChat(formdata) {
     }
     return 'Успешно!'
 }
+
+export async function getGroupsByUserId(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.userId) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM group_members WHERE memberId = ?`,
+        [formdata.userId]
+    )
+
+    let allGroups = []
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Не найдено'
+    } else {
+        
+        for (let a = 0; a < rows.length; a++) {
+            let [rows2] = await connection.execute(
+                `SELECT * FROM chat_group WHERE id = ?`,
+                [rows[a].groupId]
+            )
+            allGroups.push(rows2[0])
+        }
+    }
+
+    await connection.end()
+    return allGroups
+}
+
+export async function sendGroupMessage(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.content || !formdata.senderId || !formdata.groupId) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM chat_group WHERE id = ?`,
+        [formdata.groupId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    try {
+        await connection.execute(
+            `INSERT INTO group_messages (senderId, groupId, content) VALUES (?, ?, ?)`,
+            [formdata.senderId, formdata.groupId, formdata.content]
+        )
+        await connection.end()
+        return 'Успешно!'
+    } catch {
+        console.error(e)
+    }
+}
+
+export async function getGroupMessages(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.groupId) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM (
+            SELECT * FROM group_messages
+            WHERE groupId = ?
+            ORDER BY id DESC
+            LIMIT 100
+        ) AS temp
+        ORDER BY id ASC`,
+        [formdata.groupId]
+    )
+
+    let [rows2] = await connection.execute(
+        `SELECT sender.login AS senderLogin FROM group_messages
+        INNER JOIN accounts AS sender ON group_messages.senderId = sender.id
+        WHERE group_messages.groupId = ?`,
+        [formdata.groupId]
+    )
+}

@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId} from './repository.js';
 import cookieParser from 'cookie-parser';
 import { WebSocketServer } from 'ws';
 
@@ -195,6 +195,15 @@ app.post('/api/create/group', async (req, res) => {
     }
 
     let response = await createGroupChat(formdata)
+    res.json(response)
+})
+
+app.post('/api/get/groups', async (req, res) => {
+    let formdata = {
+        userId: req.body?.id
+    }
+
+    let response = await getGroupsByUserId(formdata)
     res.json(response)
 })
 

@@ -45,6 +45,12 @@ export function up(db) {
       groupId INT NOT NULL,
       memberId INT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS group_messages (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      groupId INT NOT NULL,
+      senderId INT NOT NULL,
+      content VARCHAR(255) NOT NULL
+    );
   `);
 }
 
