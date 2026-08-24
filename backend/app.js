@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage} from './repository.js';
 import cookieParser from 'cookie-parser';
 import { WebSocketServer } from 'ws';
 
@@ -11,6 +11,8 @@ app.use(express.json())
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }))
 let activeClients = new Map()
+let groupActiveClients = new Map()
+
 
 server.on('connection', async (ws) => {
     let currentUserId = null
@@ -21,21 +23,45 @@ server.on('connection', async (ws) => {
         activeClients.set(Number(messageString.senderId), ws)
 
         let response = null
+        if (messageString.sendGroup === true) {
+            groupActiveClients.set(ws, { senderId: messageString.senderId, groupId: messageString.groupId })
+            response = await sendGroupMessage(messageString)
+            let response2 = await getGroupMessages(messageString)
+            for (const [ws, info] of groupActiveClients.entries()) {
+                if (ws.readyState === WebSocket.OPEN && messageString.groupId === info.groupId) {
+                    ws.send(JSON.stringify(response2))
+                }
+            }
+        }
+        if (messageString.getGroup === true) {
+            groupActiveClients.set(ws, { senderId: messageString.senderId, groupId: messageString.groupId })
+            response = await getGroupMessages(messageString)
+            for (const [ws, info] of groupActiveClients.entries()) {
+                if (ws.readyState === WebSocket.OPEN && messageString.groupId === info.groupId) {
+                    ws.send(JSON.stringify(response))
+                }
+            }
+        }
         if (messageString.get === true) {
             response = await getMessages(messageString)
         }
-        if (messageString.get !== true) {
+        if (messageString.get !== true && !messageString.getGroup && !messageString.sendGroup ) {
             await sendMessage(messageString)
             response = await getMessages(messageString)
+            messageString.get = true
         }
 
-        let receiverWs = activeClients.get(Number(messageString.senderId))
-        let receiverWs2 = activeClients.get(Number(messageString.receiverId))
 
-        receiverWs.send(JSON.stringify(response))
-        if (receiverWs2) {
-            receiverWs2.send(JSON.stringify(response))
+        if (messageString.get === true) {
+            let receiverWs = activeClients.get(Number(messageString.senderId))
+            let receiverWs2 = activeClients.get(Number(messageString.receiverId))
+
+            receiverWs.send(JSON.stringify(response))
+            if (receiverWs2) {
+                receiverWs2.send(JSON.stringify(response))
+            }
         }
+
     })
     ws.on('close', () => {
         

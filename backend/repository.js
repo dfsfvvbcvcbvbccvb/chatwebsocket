@@ -616,6 +616,7 @@ export async function getGroupsByUserId(formdata) {
 export async function sendGroupMessage(formdata) {
     let connection = await getConnection()
 
+    console.log(formdata)
     if (!formdata || !formdata.content || !formdata.senderId || !formdata.groupId) {
         await connection.end()
         return 'Ошибка!'
@@ -668,4 +669,9 @@ export async function getGroupMessages(formdata) {
         WHERE group_messages.groupId = ?`,
         [formdata.groupId]
     )
+
+    for (let a = 0; a < rows.length; a++) {
+        rows[a].senderLogin = rows2[a].senderLogin
+    }
+    return rows
 }
