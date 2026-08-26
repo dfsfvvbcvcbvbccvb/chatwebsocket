@@ -605,6 +605,11 @@ export async function getGroupsByUserId(formdata) {
                 `SELECT * FROM chat_group WHERE id = ?`,
                 [rows[a].groupId]
             )
+            let [rows3] = await connection.execute(
+                `SELECT * FROM group_members WHERE groupId = ?`,
+                [rows[a].groupId]
+            )
+            rows2[0].amountMembers = rows3.length
             allGroups.push(rows2[0])
         }
     }
@@ -616,7 +621,6 @@ export async function getGroupsByUserId(formdata) {
 export async function sendGroupMessage(formdata) {
     let connection = await getConnection()
 
-    console.log(formdata)
     if (!formdata || !formdata.content || !formdata.senderId || !formdata.groupId) {
         await connection.end()
         return 'Ошибка!'
