@@ -428,12 +428,7 @@ export async function getMessages(formdata) {
     )
 
     for (let a = 0; a < rows.length; a++) {
-        if (rows[a].senderId === formdata.senderId) {
-            rows[a].senderUsername = rows2[0].senderLogin
-        }
-        if (rows[a].senderId === formdata.receiverId) {
-            rows[a].senderUsername = rows2[0].receiverLogin
-        }
+        rows[a].senderUsername = rows2[a].senderLogin
     }
 
     if (rows.length === 0) {
@@ -678,4 +673,59 @@ export async function getGroupMessages(formdata) {
         rows[a].senderLogin = rows2[a].senderLogin
     }
     return rows
+}
+
+export async function addMemberToGroup(formdata) {
+    let connection = await getConnection()
+    if (!formdata || !formdata.groupId || !formdata.userId || !formdata.login) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM group_members WHERE memberId = ?`,
+        [formdata.userId]
+    )
+
+
+    const found = rows.some((item) => {
+        if (Number(item.groupId) === Number(formdata.groupId)) {
+            return true
+        }
+    })
+
+    if (!found) {
+        await connection.end()
+        return 'Ошибка!'
+    }
+
+    let [rows2] = await connection.execute(
+        `SELECT id FROM accounts WHERE login = ?`,
+        [formdata.login]
+    )
+
+    if (rows2.length === 0) {
+        await connection.end()
+        return 'Пользователь не найден!'
+    }
+
+    let [rows3] = await connection.execute(
+        `SELECT * FROM group_members WHERE groupId = ? AND memberId = ?`,
+        [formdata.groupId, rows2[0].id]
+    )
+
+    if (rows3.length !== 0) {
+        return 'Пользователь уже состоит в группе!'
+    }
+
+    try {
+        await connection.execute(
+            `INSERT INTO group_members (groupId, memberId) VALUES (?, ?)`,
+            [formdata.groupId, rows2[0].id]
+        )
+        await connection.end()
+        return 'Успешно!'
+    } catch (e) {
+        console.error(e)
+    }
 }

@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage, addMemberToGroup} from './repository.js';
 import cookieParser from 'cookie-parser';
 import { WebSocketServer } from 'ws';
 
@@ -230,6 +230,17 @@ app.post('/api/get/groups', async (req, res) => {
     }
 
     let response = await getGroupsByUserId(formdata)
+    res.json(response)
+})
+
+app.post('/api/group/member/add', async (req, res) => {
+    let formdata = {
+        userId: req.body?.userId,
+        login: req.body?.login,
+        groupId: req.body?.groupId
+    }
+
+    let response = await addMemberToGroup(formdata)
     res.json(response)
 })
 
