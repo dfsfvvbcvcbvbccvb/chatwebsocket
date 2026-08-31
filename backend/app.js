@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage, addMemberToGroup} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage, addMemberToGroup, searchMessages, searchGroupMessages} from './repository.js';
 import cookieParser from 'cookie-parser';
 import { WebSocketServer } from 'ws';
 
@@ -23,6 +23,19 @@ server.on('connection', async (ws) => {
         activeClients.set(Number(messageString.senderId), ws)
 
         let response = null
+
+        if (messageString.searchGroup === true) {
+            response = await searchGroupMessages(messageString)
+            let receiverWs = activeClients.get(Number(messageString.senderId))
+            receiverWs.send(JSON.stringify(response))
+        }
+
+        if (messageString.search === true) {
+            response = await searchMessages(messageString)
+            let receiverWs = activeClients.get(Number(messageString.senderId))
+            receiverWs.send(JSON.stringify(response))
+        }
+
         if (messageString.sendGroup === true) {
             groupActiveClients.set(ws, { senderId: messageString.senderId, groupId: messageString.groupId })
             response = await sendGroupMessage(messageString)
@@ -45,7 +58,7 @@ server.on('connection', async (ws) => {
         if (messageString.get === true) {
             response = await getMessages(messageString)
         }
-        if (messageString.get !== true && !messageString.getGroup && !messageString.sendGroup ) {
+        if (messageString.get !== true && !messageString.getGroup && !messageString.sendGroup && !messageString.search && !messageString.searchGroup) {
             await sendMessage(messageString)
             response = await getMessages(messageString)
             messageString.get = true

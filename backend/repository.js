@@ -304,7 +304,7 @@ export async function getRequestsByReceiverId(formdata) {
         rows[a].senderUsername = rows2[a].senderLogin
         rows[a].receiverUsername = rows2[a].receiverLogin
     }
-
+    
     if (rows.length === 0) {
         await connection.end()
         return 'Не найдено!'
@@ -728,4 +728,53 @@ export async function addMemberToGroup(formdata) {
     } catch (e) {
         console.error(e)
     }
+}
+
+export async function searchMessages(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.content || !formdata.senderId || !formdata.receiverId) {
+        await connection.end()
+        return
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM messages
+        WHERE content LIKE ? AND senderId = ? AND receiverId = ?
+        OR content LIKE ? AND receiverId = ? AND senderId = ?
+        ORDER BY created_at DESC LIMIT 100`,
+        [formdata.content, formdata.senderId, formdata.receiverId, formdata.content, formdata.senderId, formdata.receiverId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Не найдено!'
+    }
+
+    return rows
+}
+
+export async function searchGroupMessages(formdata) {
+    let connection = await getConnection()
+
+    if (!formdata || !formdata.content || !formdata.groupId) {
+        await connection.end()
+        return
+    }
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM group_messages
+        WHERE content LIKE ? AND groupId = ?
+        ORDER BY id DESC
+        LIMIT 100`,
+        [formdata.content, formdata.groupId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Не найдено!'
+    }
+
+    await connection.end()
+    return rows
 }

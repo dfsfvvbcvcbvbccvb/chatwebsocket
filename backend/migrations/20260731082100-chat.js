@@ -49,7 +49,8 @@ export function up(db) {
       id INT PRIMARY KEY AUTO_INCREMENT,
       groupId INT NOT NULL,
       senderId INT NOT NULL,
-      content VARCHAR(255) NOT NULL
+      content VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
 }
