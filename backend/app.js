@@ -7,7 +7,7 @@ const app = express();
 const PORT = 4000;
 const server = new WebSocketServer({ port:8080 })
 
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }))
 let activeClients = new Map()

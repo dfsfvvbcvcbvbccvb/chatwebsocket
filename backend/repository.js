@@ -746,6 +746,18 @@ export async function searchMessages(formdata) {
         [formdata.content, formdata.senderId, formdata.receiverId, formdata.content, formdata.senderId, formdata.receiverId]
     )
 
+    let [rows2] = await connection.execute(
+        `SELECT sender.login AS senderLogin, receiver.login AS receiverLogin FROM messages
+        INNER JOIN accounts AS sender ON messages.senderId = sender.id
+        INNER JOIN accounts AS receiver ON messages.receiverId = receiver.id WHERE content LIKE ? AND senderId = ? AND receiverId = ?
+        OR content LIKE ? AND receiverId = ? AND senderId = ?`,
+        [formdata.content, formdata.senderId, formdata.receiverId, formdata.content, formdata.senderId, formdata.receiverId]
+    )
+
+    for (let a = 0; a < rows.length; a++) {
+        rows[a].senderUsername = rows2[a].senderLogin
+    }
+
     if (rows.length === 0) {
         await connection.end()
         return 'Не найдено!'
