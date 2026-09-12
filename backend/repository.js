@@ -387,10 +387,17 @@ export async function sendMessage(formdata) {
     }
 
     try {
-        await connection.execute(
-            `INSERT INTO messages (content, senderId, receiverId) VALUES (?, ?, ?)`,
-            [formdata.content, formdata.senderId, formdata.receiverId]
-        )
+        if (formdata.fileName) {
+            await connection.execute(
+                `INSERT INTO messages (content, senderId, receiverId, fileName) VALUES (?, ?, ?, ?)`,
+                [formdata.content, formdata.senderId, formdata.receiverId, formdata.fileName]
+            )
+        } else {
+            await connection.execute(
+                `INSERT INTO messages (content, senderId, receiverId) VALUES (?, ?, ?)`,
+                [formdata.content, formdata.senderId, formdata.receiverId]
+            )
+        }
         await connection.end()
         return 'Успешно!'
     } catch (e) {

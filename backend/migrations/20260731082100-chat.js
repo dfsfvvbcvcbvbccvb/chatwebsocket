@@ -33,7 +33,8 @@ export function up(db) {
       content VARCHAR(255) NOT NULL,
       senderId INT NOT NULL,
       receiverId INT NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      fileName VARCHAR(255)
     );
     CREATE TABLE IF NOT EXISTS chat_group (
       id INT PRIMARY KEY AUTO_INCREMENT,

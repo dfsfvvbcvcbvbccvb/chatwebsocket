@@ -2,11 +2,15 @@ import express, { response } from 'express';
 import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage, addMemberToGroup, searchMessages, searchGroupMessages} from './repository.js';
 import cookieParser from 'cookie-parser';
 import { WebSocketServer } from 'ws';
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url';
 
 const app = express();
 const PORT = 4000;
 const server = new WebSocketServer({ port:8080 })
 
+app.use('/uploads', express.static('uploads'));
 app.use(express.json({ limit: '10mb' }))
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }))
@@ -59,6 +63,29 @@ server.on('connection', async (ws) => {
             response = await getMessages(messageString)
         }
         if (messageString.get !== true && !messageString.getGroup && !messageString.sendGroup && !messageString.search && !messageString.searchGroup) {
+            let fileName = ''
+            let uploadPath = ''
+            if (messageString.file) {
+                const base64Data = messageString.file
+                const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                if (!matches || matches.length !== 3) {
+                    return
+                }
+                const fileExtension = matches[1].split('/')[1]
+                const pureBase64 = matches[2]
+
+                const __filename = fileURLToPath(import.meta.url);
+                const __dirname = path.dirname(__filename);
+
+                fileName = `photo_${Date.now()}.${fileExtension}`;
+                uploadPath = path.join(__dirname, 'uploads', fileName)
+
+                fs.writeFile(uploadPath, pureBase64, 'base64', (err) => {
+                if (err) return console.error('Ошибка сохранения файла:', err);
+                });
+                messageString.fileName = `/uploads/${fileName}` 
+            }
+
             await sendMessage(messageString)
             response = await getMessages(messageString)
             messageString.get = true
