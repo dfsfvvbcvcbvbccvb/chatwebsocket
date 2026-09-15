@@ -51,6 +51,7 @@ export function up(db) {
       groupId INT NOT NULL,
       senderId INT NOT NULL,
       content VARCHAR(255) NOT NULL,
+      fileName VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);

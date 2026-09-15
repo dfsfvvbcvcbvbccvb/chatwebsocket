@@ -639,10 +639,17 @@ export async function sendGroupMessage(formdata) {
     }
 
     try {
-        await connection.execute(
-            `INSERT INTO group_messages (senderId, groupId, content) VALUES (?, ?, ?)`,
-            [formdata.senderId, formdata.groupId, formdata.content]
-        )
+        if (formdata.fileName) {
+            await connection.execute(
+                `INSERT INTO group_messages (senderId, groupId, content, fileName) VALUES (?, ?, ?, ?)`,
+                [formdata.senderId, formdata.groupId, formdata.content, formdata.fileName]
+            )
+        } else {
+            await connection.execute(
+                `INSERT INTO group_messages (senderId, groupId, content) VALUES (?, ?, ?)`,
+                [formdata.senderId, formdata.groupId, formdata.content]
+            )
+        }
         await connection.end()
         return 'Успешно!'
     } catch {

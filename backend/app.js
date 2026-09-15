@@ -28,6 +28,29 @@ server.on('connection', async (ws) => {
 
         let response = null
 
+            let fileName = ''
+            let uploadPath = ''
+            if (messageString.file) {
+                const base64Data = messageString.file
+                const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                if (!matches || matches.length !== 3) {
+                    return
+                }
+                const fileExtension = matches[1].split('/')[1]
+                const pureBase64 = matches[2]
+
+                const __filename = fileURLToPath(import.meta.url);
+                const __dirname = path.dirname(__filename);
+
+                fileName = `photo_${Date.now()}.${fileExtension}`;
+                uploadPath = path.join(__dirname, 'uploads', fileName)
+
+                fs.writeFile(uploadPath, pureBase64, 'base64', (err) => {
+                if (err) return console.error('Ошибка сохранения файла:', err);
+                });
+                messageString.fileName = `/uploads/${fileName}` 
+            }
+
         if (messageString.searchGroup === true) {
             response = await searchGroupMessages(messageString)
             let receiverWs = activeClients.get(Number(messageString.senderId))
@@ -63,29 +86,6 @@ server.on('connection', async (ws) => {
             response = await getMessages(messageString)
         }
         if (messageString.get !== true && !messageString.getGroup && !messageString.sendGroup && !messageString.search && !messageString.searchGroup) {
-            let fileName = ''
-            let uploadPath = ''
-            if (messageString.file) {
-                const base64Data = messageString.file
-                const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-                if (!matches || matches.length !== 3) {
-                    return
-                }
-                const fileExtension = matches[1].split('/')[1]
-                const pureBase64 = matches[2]
-
-                const __filename = fileURLToPath(import.meta.url);
-                const __dirname = path.dirname(__filename);
-
-                fileName = `photo_${Date.now()}.${fileExtension}`;
-                uploadPath = path.join(__dirname, 'uploads', fileName)
-
-                fs.writeFile(uploadPath, pureBase64, 'base64', (err) => {
-                if (err) return console.error('Ошибка сохранения файла:', err);
-                });
-                messageString.fileName = `/uploads/${fileName}` 
-            }
-
             await sendMessage(messageString)
             response = await getMessages(messageString)
             messageString.get = true
