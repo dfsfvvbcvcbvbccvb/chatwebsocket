@@ -6,7 +6,8 @@ export function up(db) {
       description VARCHAR(255),
       password VARCHAR(255) NOT NULL,
       email VARCHAR(255) NOT NULL UNIQUE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      avatar VARCHAR(255)
     );
     CREATE TABLE IF NOT EXISTS sessions (
       id INT PRIMARY KEY AUTO_INCREMENT,

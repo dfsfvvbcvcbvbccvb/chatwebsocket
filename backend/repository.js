@@ -1,6 +1,9 @@
 import mysql from "mysql2/promise"
 import bcrypt from 'bcrypt';
 import crypto from 'crypto'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url';
 
 let saltRounds = 10
 
@@ -428,7 +431,7 @@ export async function getMessages(formdata) {
 
 
     let [rows2] = await connection.execute(
-        `SELECT sender.login AS senderLogin, receiver.login AS receiverLogin FROM messages
+        `SELECT sender.login AS senderLogin, sender.avatar AS senderAvatar, receiver.login AS receiverLogin, receiver.avatar AS receiverAvatar FROM messages
         INNER JOIN accounts AS sender ON messages.senderId = sender.id
         INNER JOIN accounts AS receiver ON messages.receiverId = receiver.id WHERE sender.id = ? AND receiver.id = ? OR receiver.id = ? AND sender.id = ?`,
         [formdata.senderId, formdata.receiverId, formdata.senderId, formdata.receiverId]
@@ -436,6 +439,7 @@ export async function getMessages(formdata) {
 
     for (let a = 0; a < rows.length; a++) {
         rows[a].senderUsername = rows2[a].senderLogin
+        rows[a].senderAvatar = rows2[a].senderAvatar
     }
 
     if (rows.length === 0) {
@@ -477,7 +481,7 @@ export async function getProfile(formdata) {
     }
 
     let [rows] = await connection.execute(
-        `SELECT login, description FROM accounts WHERE id = ?`,
+        `SELECT login, description, avatar FROM accounts WHERE id = ?`,
         [formdata.userId]
     )
 
@@ -507,10 +511,60 @@ export async function editProfile(formdata) {
         return 'Ошибка!'
     }
 
+    let checkAvatar = ''
+    if (formdata.file) {
+        checkAvatar = await connection.execute(
+            `SELECT avatar FROM accounts WHERE id = ?`,
+            [formdata.userId]
+        )
+        if (!checkAvatar[0].avatar) {
+            checkAvatar = false
+        } else {
+            fs.unlink(`/avatars/${checkAvatar[0].avatar}`)
+        }
+    }
+
+
+
+    let fileName = ''
+    let uploadPath = ''
+    if (formdata.file) {
+        const base64Data = formdata.file
+        const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) {
+            return
+        }
+        const fileExtension = matches[1].split('/')[1]
+        const pureBase64 = matches[2]
+
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+
+        fileName = `photo_${Date.now()}.${fileExtension}`;
+        uploadPath = path.join(__dirname, 'avatars', fileName)
+
+        fs.writeFile(uploadPath, pureBase64, 'base64', (err) => {
+            if (err) return console.error('Ошибка сохранения файла:', err);
+        });
+    }
+
+
+
+
+
+
+
     if (formdata.username) {
         await connection.execute(
             `UPDATE accounts SET login=? WHERE id = ?`,
             [formdata.username, formdata.userId]
+        )
+    }
+
+    if (formdata.file) {
+        await connection.execute(
+            `UPDATE accounts SET avatar=? WHERE id = ?`,
+            [`/avatars/${fileName}`, formdata.userId]
         )
     }
 

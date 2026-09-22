@@ -11,6 +11,7 @@ const PORT = 4000;
 const server = new WebSocketServer({ port:8080 })
 
 app.use('/uploads', express.static('uploads'));
+app.use('/avatars', express.static('avatars'));
 app.use(express.json({ limit: '10mb' }))
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }))
@@ -246,7 +247,8 @@ app.post('/api/edit/profile', async (req, res) => {
     let formdata = {
         userId: req.body?.userId,
         username: req.body?.username,
-        description: req.body?.description
+        description: req.body?.description,
+        file: req.body?.file
     }
 
     let response = await editProfile(formdata)
