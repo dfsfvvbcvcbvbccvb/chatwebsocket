@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage, addMemberToGroup, searchMessages, searchGroupMessages} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage, addMemberToGroup, searchMessages, searchGroupMessages, deleteFriend} from './repository.js';
 import cookieParser from 'cookie-parser';
 import { WebSocketServer } from 'ws';
 import path from 'path'
@@ -11,7 +11,6 @@ const PORT = 4000;
 const server = new WebSocketServer({ port:8080 })
 
 app.use('/uploads', express.static('uploads'));
-app.use('/avatars', express.static('avatars'));
 app.use(express.json({ limit: '10mb' }))
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }))
@@ -283,6 +282,15 @@ app.post('/api/group/member/add', async (req, res) => {
     }
 
     let response = await addMemberToGroup(formdata)
+    res.json(response)
+})
+
+app.post('/api/friend/delete', async (req, res) => {
+    let formdata = {
+        friendId: req.body?.friendId
+    }
+
+    let response = await deleteFriend(formdata)
     res.json(response)
 })
 

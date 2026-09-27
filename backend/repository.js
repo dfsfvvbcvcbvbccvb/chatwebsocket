@@ -152,6 +152,16 @@ export async function sendRequest(formdata) {
         [formdata.receiverUsername]
     )
 
+    let [rows2] = await connection.execute(
+        `SELECT login FROM accounts WHERE id = ?`,
+        [formdata.userId]
+    )
+
+    if (rows2[0].login === formdata.receiverUsername) {
+        await connection.end()
+        return 'Нельзя отправить самому себе!'
+    }
+
     if (rows.length === 0) {
         return 'Такого пользователя не существует'
     }
@@ -417,7 +427,6 @@ export async function getMessages(formdata) {
         return 'Ошибка!'
     }
 
-
     let [rows] = await connection.execute(
         `SELECT * FROM (
             SELECT * FROM messages
@@ -520,7 +529,7 @@ export async function editProfile(formdata) {
         if (!checkAvatar[0].avatar) {
             checkAvatar = false
         } else {
-            fs.unlink(`/avatars/${checkAvatar[0].avatar}`)
+            fs.unlink(`/uploads/${checkAvatar[0].avatar}`)
         }
     }
 
@@ -541,7 +550,7 @@ export async function editProfile(formdata) {
         const __dirname = path.dirname(__filename);
 
         fileName = `photo_${Date.now()}.${fileExtension}`;
-        uploadPath = path.join(__dirname, 'avatars', fileName)
+        uploadPath = path.join(__dirname, 'uploads', fileName)
 
         fs.writeFile(uploadPath, pureBase64, 'base64', (err) => {
             if (err) return console.error('Ошибка сохранения файла:', err);
@@ -564,7 +573,7 @@ export async function editProfile(formdata) {
     if (formdata.file) {
         await connection.execute(
             `UPDATE accounts SET avatar=? WHERE id = ?`,
-            [`/avatars/${fileName}`, formdata.userId]
+            [`/uploads/${fileName}`, formdata.userId]
         )
     }
 
@@ -588,6 +597,18 @@ export async function createGroupChat(formdata) {
     }
 
     formdata.usernames = formdata.usernames.split(' ')
+
+    let [checkNick] = await connection.execute(
+        `SELECT login FROM accounts WHERE id = ?`,
+        [formdata.userId]
+    )
+
+    for (let a = 0; a < formdata.usernames.length; a++) {
+        if (formdata.usernames[a] === checkNick[0].login) {
+            await connection.end()
+            return 'Нельзя создать группу самим с собой'
+        }
+    }
 
     if (formdata.usernames.length > 10) {
         await connection.end()
@@ -731,7 +752,7 @@ export async function getGroupMessages(formdata) {
     )
 
     let [rows2] = await connection.execute(
-        `SELECT sender.login AS senderLogin FROM group_messages
+        `SELECT sender.login AS senderLogin, sender.avatar AS senderAvatar FROM group_messages
         INNER JOIN accounts AS sender ON group_messages.senderId = sender.id
         WHERE group_messages.groupId = ?`,
         [formdata.groupId]
@@ -739,6 +760,7 @@ export async function getGroupMessages(formdata) {
 
     for (let a = 0; a < rows.length; a++) {
         rows[a].senderLogin = rows2[a].senderLogin
+        rows[a].senderAvatar = rows2[a].senderAvatar
     }
     return rows
 }
@@ -857,4 +879,15 @@ export async function searchGroupMessages(formdata) {
 
     await connection.end()
     return rows
+}
+
+export async function deleteFriend(formdata) {
+    let connection = await getConnection()
+
+    let [rows] = await connection.execute(
+        `DELETE FROM friends WHERE id = ?`,
+        [formdata.friendId]
+    )
+
+    return 'Успешно!'
 }
