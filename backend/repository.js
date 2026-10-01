@@ -884,10 +884,63 @@ export async function searchGroupMessages(formdata) {
 export async function deleteFriend(formdata) {
     let connection = await getConnection()
 
-    let [rows] = await connection.execute(
+    let response = await connection.execute(
         `DELETE FROM friends WHERE id = ?`,
         [formdata.friendId]
     )
 
     return 'Успешно!'
+}
+
+export async function deleteMessage(formdata) {
+    let connection = await getConnection()
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM messages WHERE id = ?`,
+        [formdata.messageId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Сообщение не найдено!'
+    }
+
+    if (rows[0].senderId !== formdata.userId) {
+        await connection.end()
+        return 'Это не ваше сообщение!'
+    }
+
+    await connection.execute(
+        `DELETE FROM messages WHERE id = ?`,
+        [formdata.messageId]
+    )
+
+    return 'Успешно!'
+}
+
+export async function deleteGroupMessage(formdata) {
+    let connection = await getConnection()
+
+    let [rows] = await connection.execute(
+        `SELECT * FROM group_messages WHERE id = ?`,
+        [formdata.messageId]
+    )
+
+    if (rows.length === 0) {
+        await connection.end()
+        return 'Сообщение не найдено!'
+    }
+
+    if (rows[0].senderId !== formdata.userId) {
+        await connection.end()
+        return 'Это не ваше сообщение'
+    }
+
+    await connection.execute(
+        `DELETE FROM group_messages WHERE id = ?`,
+        [formdata.messageId]
+    )
+    return 'Успешно!'
+
+
 }

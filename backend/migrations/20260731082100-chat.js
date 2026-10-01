@@ -35,7 +35,9 @@ export function up(db) {
       senderId INT NOT NULL,
       receiverId INT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      fileName VARCHAR(255)
+      fileName VARCHAR(255),
+      readed VARCHAR(255),
+      pinned VARCHAR(255)
     );
     CREATE TABLE IF NOT EXISTS chat_group (
       id INT PRIMARY KEY AUTO_INCREMENT,

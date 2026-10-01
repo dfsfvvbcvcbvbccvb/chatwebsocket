@@ -1,5 +1,5 @@
 import express, { response } from 'express';
-import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage, addMemberToGroup, searchMessages, searchGroupMessages, deleteFriend} from './repository.js';
+import { registration, login, getUserId, logout, sendRequest, getRequestsBySenderId, cancelRequest, getRequestsByReceiverId, acceptRequest, getLoginById, getFriends, sendMessage, getMessages, getFriendInfoById, getProfile, editProfile, createGroupChat, getGroupsByUserId, getGroupMessages, sendGroupMessage, addMemberToGroup, searchMessages, searchGroupMessages, deleteFriend, deleteMessage, deleteGroupMessage} from './repository.js';
 import cookieParser from 'cookie-parser';
 import { WebSocketServer } from 'ws';
 import path from 'path'
@@ -291,6 +291,26 @@ app.post('/api/friend/delete', async (req, res) => {
     }
 
     let response = await deleteFriend(formdata)
+    res.json(response)
+})
+
+app.post('/api/message/delete', async (req, res) => {
+    let formdata = {
+        messageId: req.body?.messageId,
+        userId: req.body?.userId
+    }
+
+    let response = await deleteMessage(formdata)
+    res.json(response)
+})
+
+app.post('/api/group/message/delete', async (req, res) => {
+    let formdata = {
+        userId: req.body?.userId,
+        messageId: req.body?.messageId
+    }
+
+    let response = await deleteGroupMessage(formdata)
     res.json(response)
 })
 
